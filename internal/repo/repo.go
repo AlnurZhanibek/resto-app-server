@@ -76,48 +76,51 @@ type RestaurantWithTables struct {
 }
 
 func (r *Repo) GetOneRestaurant(uuid *uuid.UUID) (*RestaurantWithTables, error) {
-	if uuid != nil {
+	if uuid == nil {
 		return nil, fmt.Errorf("repo error: uuid should be passed")
 	}
 
 	restaurant := Restaurant{}
 	restaurantStatement := squirrel.Select("*").From("restaurants")
-	restaurantStatement = restaurantStatement.Where(squirrel.Eq{
-		"uuid": uuid,
-	})
+	restaurantStatement = restaurantStatement.Where(squirrel.Expr("uuid = uuid_to_bin(?)", uuid))
 	restaurantSQL, args, err := restaurantStatement.ToSql()
-	err = r.db.Get(&restaurant, restaurantSQL, args)
+	if err != nil {
+		return nil, err
+	}
+	err = r.db.Get(&restaurant, restaurantSQL, args...)
 	if err != nil {
 		return nil, err
 	}
 
-	tables := make([]Table, 30)
-	tablesStatement := squirrel.Select("*").From("restaurant_tables").Where(squirrel.Eq{
-		"restaurant_uuid": uuid,
-	})
+	tables := make([]Table, 0, 30)
+	tablesStatement := squirrel.Select("*").From("restaurant_tables").Where(squirrel.Expr("restaurant_uuid = uuid_to_bin(?)", uuid))
 	tablesSQL, args, err := tablesStatement.ToSql()
-	err = r.db.Select(&tables, tablesSQL, args)
+	if err != nil {
+		return nil, err
+	}
+	err = r.db.Select(&tables, tablesSQL, args...)
 	if err != nil {
 		return nil, err
 	}
 
-	reservations := make([]Reservation, 30)
-	reservationsStatement := squirrel.Select("*").From("table_reservations").Where(squirrel.Eq{
-		"restaurant_uuid": uuid,
-	})
+	reservations := make([]Reservation, 0, 30)
+	reservationsStatement := squirrel.Select("*").From("table_reservations").Where(squirrel.Expr("restaurant_uuid = uuid_to_bin(?)", uuid))
 	reservationsSQL, args, err := reservationsStatement.ToSql()
-	err = r.db.Select(&reservations, reservationsSQL, args)
+	if err != nil {
+		return nil, err
+	}
+	err = r.db.Select(&reservations, reservationsSQL, args...)
 	if err != nil {
 		return nil, err
 	}
 
-	fullTables := make([]TableWithReservations, 30)
+	fullTables := make([]TableWithReservations, 0, 30)
 	for i, table := range tables {
 		fullTables[i] = TableWithReservations{
 			UUID:           *table.UUID,
 			RestaurantUUID: table.RestaurantUUID,
 			Number:         table.Number,
-			Reservations:   make([]Reservation, 30),
+			Reservations:   make([]Reservation, 0, 30),
 		}
 		for _, reservation := range reservations {
 			if *table.UUID == reservation.TableUUID {
@@ -143,7 +146,7 @@ func (r *Repo) CreateNewRestaurant(restaurant *Restaurant) (*uuid.UUID, error) {
 
 	sql, args, err := squirrel.Insert("restaurants").
 		Columns("uuid", "name", "description", "contact_phone", "cover_image_url", "address").
-		Values(newUUID, restaurant.Name, restaurant.Description, restaurant.ContactPhone, restaurant.CoverImageURL, restaurant.Address).ToSql()
+		Values(squirrel.Expr("uuid_to_bin(?)", newUUID), restaurant.Name, restaurant.Description, restaurant.ContactPhone, restaurant.CoverImageURL, restaurant.Address).ToSql()
 	if err != nil {
 		return nil, err
 	}
@@ -160,7 +163,7 @@ func (r *Repo) CreateNewTable(table *Table) (*uuid.UUID, error) {
 
 	sql, args, err := squirrel.Insert("restaurant_tables").
 		Columns("uuid", "restaurant_uuid", "number").
-		Values(newUUID, table.RestaurantUUID, table.Number).ToSql()
+		Values(squirrel.Expr("uuid_to_bin(?)", newUUID), table.RestaurantUUID, table.Number).ToSql()
 	if err != nil {
 		return nil, err
 	}
@@ -177,7 +180,7 @@ func (r *Repo) CreateNewReservation(reservation *Reservation) (*uuid.UUID, error
 
 	sql, args, err := squirrel.Insert("table_reservations").
 		Columns("uuid", "restaurant_uuid", "table_uuid", "client_phone", "start_date", "end_date").
-		Values(newUUID, reservation.RestaurantUUID, reservation.TableUUID, reservation.ClientPhone, reservation.StartDate, reservation.EndDate).ToSql()
+		Values(squirrel.Expr("uuid_to_bin(?)", newUUID), reservation.RestaurantUUID, reservation.TableUUID, reservation.ClientPhone, reservation.StartDate, reservation.EndDate).ToSql()
 	if err != nil {
 		return nil, err
 	}
