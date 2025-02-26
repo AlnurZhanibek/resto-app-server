@@ -114,14 +114,14 @@ func (r *Repo) GetOneRestaurant(uuid *uuid.UUID) (*RestaurantWithTables, error) 
 		return nil, err
 	}
 
-	fullTables := make([]TableWithReservations, 0, 30)
+	fullTables := make([]TableWithReservations, 0, len(tables))
 	for i, table := range tables {
-		fullTables[i] = TableWithReservations{
+		fullTables = append(fullTables, TableWithReservations{
 			UUID:           *table.UUID,
 			RestaurantUUID: table.RestaurantUUID,
 			Number:         table.Number,
 			Reservations:   make([]Reservation, 0, 30),
-		}
+		})
 		for _, reservation := range reservations {
 			if *table.UUID == reservation.TableUUID {
 				fullTables[i].Reservations = append(fullTables[i].Reservations, reservation)
@@ -163,11 +163,11 @@ func (r *Repo) CreateNewTable(table *Table) (*uuid.UUID, error) {
 
 	sql, args, err := squirrel.Insert("restaurant_tables").
 		Columns("uuid", "restaurant_uuid", "number").
-		Values(squirrel.Expr("uuid_to_bin(?)", newUUID), table.RestaurantUUID, table.Number).ToSql()
+		Values(squirrel.Expr("uuid_to_bin(?)", newUUID), squirrel.Expr("uuid_to_bin(?)", table.RestaurantUUID), table.Number).ToSql()
 	if err != nil {
 		return nil, err
 	}
-	_, err = r.db.Exec(sql, args)
+	_, err = r.db.Exec(sql, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -180,11 +180,11 @@ func (r *Repo) CreateNewReservation(reservation *Reservation) (*uuid.UUID, error
 
 	sql, args, err := squirrel.Insert("table_reservations").
 		Columns("uuid", "restaurant_uuid", "table_uuid", "client_phone", "start_date", "end_date").
-		Values(squirrel.Expr("uuid_to_bin(?)", newUUID), reservation.RestaurantUUID, reservation.TableUUID, reservation.ClientPhone, reservation.StartDate, reservation.EndDate).ToSql()
+		Values(squirrel.Expr("uuid_to_bin(?)", newUUID), squirrel.Expr("uuid_to_bin(?)", reservation.RestaurantUUID), squirrel.Expr("uuid_to_bin(?)", reservation.TableUUID), reservation.ClientPhone, reservation.StartDate, reservation.EndDate).ToSql()
 	if err != nil {
 		return nil, err
 	}
-	_, err = r.db.Exec(sql, args)
+	_, err = r.db.Exec(sql, args...)
 	if err != nil {
 		return nil, err
 	}

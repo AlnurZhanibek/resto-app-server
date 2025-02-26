@@ -1,0 +1,182 @@
+basePath: /
+definitions:
+  repo.Reservation:
+    properties:
+      clientPhone:
+        type: string
+      endDate:
+        type: string
+      restaurantUuid:
+        type: string
+      startDate:
+        type: string
+      tableUuid:
+        type: string
+      uuid:
+        type: string
+    type: object
+  repo.Restaurant:
+    properties:
+      address:
+        type: string
+      contactPhone:
+        type: string
+      coverImageURL:
+        type: string
+      description:
+        type: string
+      name:
+        type: string
+      uuid:
+        type: string
+    type: object
+  repo.RestaurantWithTables:
+    properties:
+      address:
+        type: string
+      contactPhone:
+        type: string
+      coverImageUrl:
+        type: string
+      description:
+        type: string
+      name:
+        type: string
+      tables:
+        items:
+          $ref: '#/definitions/repo.TableWithReservations'
+        type: array
+      uuid:
+        type: string
+    type: object
+  repo.Table:
+    properties:
+      number:
+        type: integer
+      restaurantUuid:
+        type: string
+      uuid:
+        type: string
+    type: object
+  repo.TableWithReservations:
+    properties:
+      number:
+        type: integer
+      reservations:
+        items:
+          $ref: '#/definitions/repo.Reservation'
+        type: array
+      restaurantUuid:
+        type: string
+      uuid:
+        type: string
+    type: object
+host: localhost:8080
+info:
+  contact:
+    email: support@swagger.io
+    name: API Support
+    url: http://www.swagger.io/support
+  description: Resto App Server APIs
+  license:
+    name: Apache 2.0
+    url: http://www.apache.org/licenses/LICENSE-2.0.html
+  termsOfService: http://swagger.io/terms/
+  title: Resto App Server
+  version: "1.0"
+paths:
+  /reservations/create:
+    post:
+      consumes:
+      - application/json
+      description: create reservation full info
+      operationId: CreateReservation
+      parameters:
+      - description: reservation body
+        in: body
+        name: reservation
+        required: true
+        schema:
+          $ref: '#/definitions/repo.Reservation'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+      summary: create-reservation example
+      tags:
+      - reservation
+  /restaurants/{uuid}:
+    get:
+      consumes:
+      - application/json
+      description: get restaurant full info
+      operationId: GetRestaurant
+      parameters:
+      - description: restaurant uuid
+        in: path
+        name: uuid
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/repo.RestaurantWithTables'
+      summary: get-restaurant example
+      tags:
+      - restaurant
+  /restaurants/create:
+    post:
+      consumes:
+      - application/json
+      description: create restaurant full info
+      operationId: CreateRestaurant
+      parameters:
+      - description: restaurant body
+        in: body
+        name: restaurant
+        required: true
+        schema:
+          $ref: '#/definitions/repo.Restaurant'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+      summary: create-restaurant example
+      tags:
+      - restaurant
+  /tables/create:
+    post:
+      consumes:
+      - application/json
+      description: create table full info
+      operationId: CreateTable
+      parameters:
+      - description: table body
+        in: body
+        name: table
+        required: true
+        schema:
+          $ref: '#/definitions/repo.Table'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+      summary: create-table example
+      tags:
+      - table
+schemes:
+- http
+- https
+swagger: "2.0"
